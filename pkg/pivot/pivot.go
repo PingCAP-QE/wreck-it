@@ -66,6 +66,7 @@ func (p *Pivot) Close() {
 
 func (p *Pivot) Init(ctx context.Context) {
 	rand.Seed(time.Now().UnixNano())
+	p.Tables = make([]Table, 0)
 
 	// Warn: Hard code db name
 	tables, err := p.Executor.GetConn().FetchTables(p.DBName)
