@@ -117,8 +117,10 @@ func init() {
 	for _, f := range []*Function{&Lt, &Gt, &Le, &Ge, &Ne, &Eq} {
 		f.AcceptType = make([]map[int]int, 0)
 		mArg := *f.NewAcceptTypeMap()
-		mArg[DatetimeArg] = AnyArg ^ StringArg
+		mArg[DatetimeArg] = AnyArg ^ StringArg ^ IntArg ^ FloatArg
 		mArg[StringArg] = AnyArg ^ DatetimeArg
+		mArg[IntArg] = AnyArg ^ DatetimeArg
+		mArg[FloatArg] = AnyArg ^ DatetimeArg
 		f.AcceptType = append(f.AcceptType, mArg, mArg)
 	}
 }
@@ -167,27 +169,8 @@ func ConvertToBoolOrNull(a parser_driver.ValueExpr) int8 {
 }
 
 func compare(a, b parser_driver.ValueExpr) int {
-	res, err := a.CompareDatum(&stmtctx.StatementContext{}, &b.Datum)
-	zero := parser_driver.ValueExpr{}
-	zero.SetInt64(0)
-	if err != nil {
-		switch a.Kind() {
-		case types.KindFloat32, types.KindFloat64, types.KindInt64, types.KindUint64:
-			switch b.Kind() {
-			case types.KindString:
-				if i, err := a.CompareDatum(&stmtctx.StatementContext{}, &zero.Datum); err == nil {
-					return i
-				}
-			}
-		case types.KindString:
-			switch b.Kind() {
-			case types.KindFloat32, types.KindFloat64, types.KindInt64, types.KindUint64:
-				if i, err := b.CompareDatum(&stmtctx.StatementContext{}, &zero.Datum); err == nil {
-					return -i
-				}
-			}
-		}
-		panic(fmt.Sprintf("compare %v and %v err: %v", a, b, err))
-	}
+	res, err := a.CompareDatum(&stmtctx.StatementContext{AllowInvalidDate: true, IgnoreTruncate: true}, &b.Datum)
+	// NOTE: err is warning, not really error
+	fmt.Printf("@@compare a: %v t(a): %d b: %v r: %d err: %v\n", a.GetValue(), a.GetType().Tp, b.GetValue(), res, err)
 	return res
 }

@@ -2,9 +2,10 @@ package pivot
 
 import (
 	"fmt"
-	"github.com/zhouqiang-cl/wreck-it/pkg/connection"
 	"strconv"
 	"time"
+
+	"github.com/zhouqiang-cl/wreck-it/pkg/connection"
 
 	"github.com/pingcap/parser/ast"
 	"github.com/pingcap/parser/model"
@@ -133,7 +134,21 @@ func (g *Generator) whereClauseAst(depth int, usedTables []Table) ast.ExprNode {
 
 // TODO: important! resolve random when a kind was banned
 func (g *Generator) constValueExpr(arg int) ast.ValueExpr {
-	switch x := Rd(10); x {
+	switch x := Rd(13); x {
+	case 8, 9, 10:
+		if arg&FloatArg != 0 {
+			switch y := Rd(6); y {
+			case 0, 1:
+				return ast.NewValueExpr(float64(0), "", "")
+			case 2:
+				return ast.NewValueExpr(float64(1.0), "", "")
+			case 3:
+				return ast.NewValueExpr(float64(-1.0), "", "")
+			default:
+				return ast.NewValueExpr(RdFloat64(), "", "")
+			}
+		}
+		fallthrough
 	case 7:
 		if arg&DatetimeArg != 0 {
 			t := tidb_types.NewTime(tidb_types.FromGoTime(RdDate()), mysql.TypeDatetime, 0)
@@ -149,18 +164,6 @@ func (g *Generator) constValueExpr(arg int) ast.ValueExpr {
 		}
 		fallthrough
 	case 3, 4, 5:
-		if arg&StringArg != 0 {
-			switch y := Rd(3); y {
-			case 0, 1:
-				return ast.NewValueExpr(RdString(Rd(10)), "", "")
-			default:
-				return ast.NewValueExpr("", "", "")
-			}
-		} else if arg&DatetimeAsStringArg != 0 {
-			return ast.NewValueExpr(RdTimestamp().Format("2006-01-02 15:04:05"), "", "")
-		}
-		fallthrough
-	case 0, 1, 2:
 		if arg&IntArg != 0 {
 			switch y := Rd(6); y {
 			case 0, 1:
@@ -172,6 +175,18 @@ func (g *Generator) constValueExpr(arg int) ast.ValueExpr {
 			default:
 				return ast.NewValueExpr(RdInt64(), "", "")
 			}
+		}
+		fallthrough
+	case 0, 1, 2:
+		if arg&StringArg != 0 {
+			switch y := Rd(3); y {
+			case 0, 1:
+				return ast.NewValueExpr(RdString(Rd(10)), "", "")
+			default:
+				return ast.NewValueExpr("", "", "")
+			}
+		} else if arg&DatetimeAsStringArg != 0 {
+			return ast.NewValueExpr(RdTimestamp().Format("2006-01-02 15:04:05"), "", "")
 		}
 		fallthrough
 	default:
@@ -274,7 +289,8 @@ func Evaluate(e ast.Node, usedTables []Table, pivotRows map[TableColumn]*connect
 		for key, value := range pivotRows {
 			if key.Table+"."+key.Name == t.Name.OrigColName() {
 				v := parser_driver.ValueExpr{}
-				v.SetValue(getTypedValue(value))
+				val, _ := getTypedValue(value)
+				v.SetValue(val)
 				return v
 			}
 		}
@@ -282,6 +298,7 @@ func Evaluate(e ast.Node, usedTables []Table, pivotRows map[TableColumn]*connect
 	case ast.ValueExpr:
 		v := parser_driver.ValueExpr{}
 		v.SetValue(t.GetValue())
+		v.SetType(t.GetType())
 		return v
 	case *parser_driver.ValueExpr: // is reachable?
 		panic("not reachable")
@@ -291,18 +308,18 @@ func Evaluate(e ast.Node, usedTables []Table, pivotRows map[TableColumn]*connect
 	return v
 }
 
-func getTypedValue(it *connection.QueryItem) interface{} {
+func getTypedValue(it *connection.QueryItem) (interface{}, byte) {
 	switch it.ValType.DatabaseTypeName() {
 	case "VARCHAR", "TEXT", "CHAR":
-		return it.ValString
+		return it.ValString, mysql.TypeString
 	case "INT", "BIGINT", "TINYINT":
 		i, _ := strconv.ParseInt(it.ValString, 10, 64)
-		return i
+		return i, mysql.TypeLong
 	case "TIMESTAMP", "DATE", "DATETIME":
 		t, _ := time.Parse("2006-01-02 15:04:05", it.ValString)
-		return tidb_types.NewTime(tidb_types.FromGoTime(t), mysql.TypeTimestamp, 6)
+		return tidb_types.NewTime(tidb_types.FromGoTime(t), mysql.TypeTimestamp, 6), mysql.TypeDatetime
 	case "NULL":
-		return nil
+		return nil, mysql.TypeNull
 	default:
 		panic(fmt.Sprintf("unreachable type %s", it.ValType.DatabaseTypeName()))
 	}
@@ -322,7 +339,7 @@ func (g *Generator) walkWhereClause(node *ast.SelectStmt, usedTables []Table, pi
 		// make it true
 		zero := parser_driver.ValueExpr{}
 		zero.SetInt64(0)
-		res, _ := out.CompareDatum(&stmtctx.StatementContext{}, &zero.Datum)
+		res, _ := out.CompareDatum(&stmtctx.StatementContext{AllowInvalidDate: true, IgnoreTruncate: true}, &zero.Datum)
 		if res == 0 {
 			node.Where = &ast.UnaryOperationExpr{
 				Op: opcode.Not,
