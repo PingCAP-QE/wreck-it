@@ -22,7 +22,7 @@ func main() {
 		panic("no dsn in arguments")
 	}
 
-	p, err := pivot.NewPivot(dsn, "pivot_test")
+	p, err := pivot.NewPivot(dsn, "test")
 	if err != nil {
 		panic(fmt.Sprintf("new pivot failed, error: %+v\n", err))
 	}
