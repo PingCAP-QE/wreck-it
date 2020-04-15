@@ -16,6 +16,8 @@ package sqlsmith
 import (
 	"errors"
 	"fmt"
+	"github.com/pingcap/parser/ast"
+	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/stateflow"
 	"strings"
 
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/builtin"
@@ -45,6 +47,13 @@ func (s *SQLSmith) UpdateStmt() (string, string, error) {
 func (s *SQLSmith) InsertStmt(fn bool) (string, string, error) {
 	tree := s.insertStmt()
 	return s.Walk(tree)
+}
+
+func (s *SQLSmith) InsertStmtForTable(tableName string) (string, error) {
+	node := s.insertStmt()
+	sf := stateflow.New(s.GetDB(s.currDB), s.stable)
+	sf.WalkInsertStmtForTable(node.(*ast.InsertStmt), tableName)
+	return util.BufferOut(node)
 }
 
 // DeleteStmt implement delete statement from AST

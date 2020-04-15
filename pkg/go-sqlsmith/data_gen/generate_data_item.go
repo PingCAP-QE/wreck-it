@@ -15,7 +15,7 @@ package data_gen
 
 import (
 	"fmt"
-	"github.com/pingcap/parser/ast"
+	//"github.com/pingcap/parser/ast"
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/types"
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/util"
 	"strings"
@@ -77,9 +77,9 @@ func GenerateDataItemString(column *types.Column) string {
 func GenerateDataItem(column *types.Column) interface{} {
 	var res interface{}
 	// there will be 1/3 possibility return nil
-	if !column.HasOption(ast.ColumnOptionNotNull) && util.RdRange(0, 3) == 0 {
-		return nil
-	}
+	//if !column.HasOption(ast.ColumnOptionNotNull) && util.RdRange(0, 3) == 0 {
+	//	return nil
+	//}
 	switch column.DataType {
 	case "varchar":
 		res = GenerateStringItemLen(column.DataLen)

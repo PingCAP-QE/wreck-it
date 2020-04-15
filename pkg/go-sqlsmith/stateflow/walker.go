@@ -107,8 +107,18 @@ func (s *StateFlow) walkUpdateStmt(node *ast.UpdateStmt) *types.Table {
 	return table
 }
 
+func (s *StateFlow) WalkInsertStmtForTable(node *ast.InsertStmt, tableName string) *types.Table {
+	table := s.db.Tables[tableName]
+	return s.doWalkInsertStmt(node, table)
+}
+
 func (s *StateFlow) walkInsertStmt(node *ast.InsertStmt) *types.Table {
-	table := s.walkTableName(node.Table.TableRefs.Left.(*ast.TableName), false, true)
+	table := s.randTable(false, false, true)
+	return s.doWalkInsertStmt(node, table)
+}
+
+func (s *StateFlow) doWalkInsertStmt(node *ast.InsertStmt, table *types.Table) *types.Table {
+	node.Table.TableRefs.Left.(*ast.TableName).Name = model.NewCIStr(table.Table)
 	columns := s.walkColumns(&node.Columns, table)
 	s.walkLists(&node.Lists, columns)
 	return nil
@@ -292,6 +302,11 @@ func (s *StateFlow) walkAssignmentList(list *[]*ast.Assignment, table *types.Tab
 
 func (s *StateFlow) walkBinaryOperationExpr(node *ast.BinaryOperationExpr, table *types.Table) {
 	s.walkExprNode(node.R, table, s.walkExprNode(node.L, table, nil))
+}
+
+func (s *StateFlow) WalkColumnsByTableName(columns *[]*ast.ColumnName, tableName string) []*types.Column {
+	table := s.db.Tables[tableName]
+	return s.walkColumns(columns, table)
 }
 
 func (s *StateFlow) walkColumns(columns *[]*ast.ColumnName, table *types.Table) []*types.Column {

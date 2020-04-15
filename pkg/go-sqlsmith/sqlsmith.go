@@ -20,7 +20,6 @@ import (
 	"github.com/juju/errors"
 	"github.com/pingcap/parser/ast"
 
-	"github.com/zhouqiang-cl/wreck-it/pkg/generator"
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/stateflow"
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/types"
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/util"
@@ -42,7 +41,7 @@ type SQLSmith struct {
 }
 
 // New create SQLSmith instance
-func New() generator.Generator {
+func New() *SQLSmith {
 	return new()
 }
 
