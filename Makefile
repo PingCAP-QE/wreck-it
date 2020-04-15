@@ -10,6 +10,9 @@ default: randgen
 randgen:
 	$(GOBUILD) $(GOMOD) -o bin/randgen cmd/randgen/*.go
 
+pivot:
+	$(GOBUILD) $(GOMOD) -o bin/pivot cmd/pivot/*.go
+
 fmt:
 	go fmt ./...
 

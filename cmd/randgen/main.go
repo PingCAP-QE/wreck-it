@@ -71,7 +71,7 @@ func doGenerate() error {
 		}
 	}
 
-	for i := 0; i < r.Intn(30); i++ {
+	for i := 0; i < r.Intn(30)+2; i++ {
 		sql, _ := e.GenerateDMLInsert()
 		err = e.Exec(sql.SQLStmt)
 		if err != nil {

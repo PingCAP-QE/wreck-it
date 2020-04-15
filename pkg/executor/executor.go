@@ -14,6 +14,7 @@
 package executor
 
 import (
+	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/types"
 	"regexp"
 
 	"github.com/juju/errors"
@@ -21,7 +22,6 @@ import (
 	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith"
 
 	"github.com/zhouqiang-cl/wreck-it/pkg/connection"
-	"github.com/zhouqiang-cl/wreck-it/pkg/generator"
 )
 
 var (
@@ -31,7 +31,7 @@ var (
 // Executor define test executor
 type Executor struct {
 	conn *connection.Connection
-	ss   generator.Generator
+	ss   *sqlsmith.SQLSmith
 	db   string
 }
 
@@ -52,4 +52,8 @@ func New(dsn string, db string) (*Executor, error) {
 		db:   db,
 	}
 	return &e, nil
+}
+
+func (e *Executor) GetTables() map[string]*types.Table {
+	return e.ss.Databases[e.db].Tables
 }

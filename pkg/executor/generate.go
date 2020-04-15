@@ -153,6 +153,18 @@ func (e *Executor) GenerateDMLDelete() (*types.SQL, error) {
 	}, nil
 }
 
+func (e *Executor) GenerateDMLInsertByTable(table string) (*types.SQL, error) {
+	stmt, err := e.ss.InsertStmtForTable(table)
+	if err != nil {
+		return nil, errors.Trace(err)
+	}
+	return &types.SQL{
+		SQLType:  types.SQLTypeDMLInsert,
+		SQLStmt:  stmt,
+		SQLTable: table,
+	}, nil
+}
+
 // GenerateDMLInsert rand insert statement
 func (e *Executor) GenerateDMLInsert() (*types.SQL, error) {
 	stmt, table, err := e.ss.InsertStmt(false)
