@@ -1,3 +1,4 @@
+Inspired by manuelrigger's paper https://arxiv.org/pdf/2001.04174.pdf
 # How to run
 ```
 make pivot
