@@ -5,7 +5,6 @@ import (
 	"math"
 	"regexp"
 
-	"github.com/pingcap/parser/mysql"
 	"github.com/pingcap/tidb/sessionctx/stmtctx"
 	"github.com/pingcap/tidb/types"
 	parser_driver "github.com/pingcap/tidb/types/parser_driver"
@@ -18,25 +17,37 @@ var (
 			e.SetNull()
 			return e, nil
 		}
-		e.SetValue(ConvertToBool(a) != ConvertToBool(b))
+		e.SetValue(ConvertToBoolOrNull(a) != ConvertToBoolOrNull(b))
 		return e, nil
 	}}
 	LogicAnd = Function{nil, 2, 2, "AND", func(a, b parser_driver.ValueExpr) (parser_driver.ValueExpr, error) {
 		e := parser_driver.ValueExpr{}
-		if a.Kind() == types.KindNull || b.Kind() == types.KindNull {
-			e.SetNull()
+		boolA := ConvertToBoolOrNull(a)
+		boolB := ConvertToBoolOrNull(b)
+		if boolA*boolB == 0 {
+			e.SetValue(false)
 			return e, nil
 		}
-		e.SetValue(ConvertToBool(a) && ConvertToBool(b))
+		if boolA == -1 || boolB == -1 {
+			e.SetValue(nil)
+			return e, nil
+		}
+		e.SetValue(true)
 		return e, nil
 	}}
 	LogicOr = Function{nil, 2, 2, "OR", func(a, b parser_driver.ValueExpr) (parser_driver.ValueExpr, error) {
 		e := parser_driver.ValueExpr{}
-		if a.Kind() == types.KindNull || b.Kind() == types.KindNull {
-			e.SetNull()
+		boolA := ConvertToBoolOrNull(a)
+		boolB := ConvertToBoolOrNull(b)
+		if boolA == 1 || boolB == 1 {
+			e.SetValue(true)
 			return e, nil
 		}
-		e.SetValue(ConvertToBool(a) || ConvertToBool(b))
+		if boolA == -1 || boolB == -1 {
+			e.SetValue(nil)
+			return e, nil
+		}
+		e.SetValue(false)
 		return e, nil
 	}}
 
@@ -112,25 +123,44 @@ func init() {
 	}
 }
 
-func ConvertToBool(a parser_driver.ValueExpr) bool {
+// -1 NULL; 0 false; 1 true
+func ConvertToBoolOrNull(a parser_driver.ValueExpr) int8 {
 	switch a.Kind() {
 	case types.KindNull:
-		return false
+		return -1
 	case types.KindInt64:
-		return a.GetValue().(int64) != 0
+		if a.GetValue().(int64) != 0 {
+			return 1
+		}
+		return 0
 	case types.KindUint64:
-		return a.GetValue().(uint64) != 0
+		if a.GetValue().(uint64) != 0 {
+			return 1
+		}
+		return 0
 	case types.KindFloat32:
-		return math.Abs(float64(a.GetValue().(float32))) >= 1
+		if math.Abs(float64(a.GetValue().(float32))) >= 1 {
+			return 1
+		}
+		return 0
 	case types.KindFloat64:
-		return math.Abs(a.GetValue().(float64)) >= 1
+		if math.Abs(a.GetValue().(float64)) >= 1 {
+			return 1
+		}
+		return 0
 	case types.KindString:
 		s := a.GetValue().(string)
 		match, _ := regexp.MatchString(`^\-{0,1}[1-9]+|^\-{0,1}0+[1-9]`, s)
-		return match
+		if match {
+			return 1
+		}
+		return 0
 	case types.KindMysqlDecimal:
 		d := a.GetMysqlDecimal()
-		return !d.IsZero()
+		if d.IsZero() {
+			return 0
+		}
+		return 1
 	default:
 		panic(fmt.Sprintf("unreachable kind: %d", a.Kind()))
 	}
@@ -149,50 +179,12 @@ func compare(a, b parser_driver.ValueExpr) int {
 					return i
 				}
 			}
-		case types.KindMysqlTime:
-			switch b.Kind() {
-			case types.KindString:
-				if i, err := b.ConvertTo(&stmtctx.StatementContext{}, types.NewFieldType(mysql.TypeTimestamp)); err == nil {
-					if r, err := a.CompareDatum(&stmtctx.StatementContext{}, &i); err == nil {
-						return r
-					}
-				}
-				if i, err := b.ConvertTo(&stmtctx.StatementContext{}, types.NewFieldType(mysql.TypeDate)); err == nil {
-					if r, err := a.CompareDatum(&stmtctx.StatementContext{}, &i); err == nil {
-						return r
-					}
-				}
-				if i, err := b.ConvertTo(&stmtctx.StatementContext{}, types.NewFieldType(mysql.TypeFloat)); err == nil {
-					if r, err := a.CompareDatum(&stmtctx.StatementContext{}, &i); err == nil {
-						return r
-					}
-				}
-				// TODO: if convert b to DATETIME failed, panic
-				return 0
-			}
 		case types.KindString:
 			switch b.Kind() {
 			case types.KindFloat32, types.KindFloat64, types.KindInt64, types.KindUint64:
 				if i, err := b.CompareDatum(&stmtctx.StatementContext{}, &zero.Datum); err == nil {
 					return -i
 				}
-			case types.KindMysqlTime:
-				if i, err := a.ConvertTo(&stmtctx.StatementContext{}, types.NewFieldType(mysql.TypeTimestamp)); err == nil {
-					if r, err := b.CompareDatum(&stmtctx.StatementContext{}, &i); err == nil {
-						return -r
-					}
-				}
-				if i, err := a.ConvertTo(&stmtctx.StatementContext{}, types.NewFieldType(mysql.TypeDate)); err == nil {
-					if r, err := b.CompareDatum(&stmtctx.StatementContext{}, &i); err == nil {
-						return -r
-					}
-				}
-				if i, err := a.ConvertTo(&stmtctx.StatementContext{}, types.NewFieldType(mysql.TypeFloat)); err == nil {
-					if r, err := b.CompareDatum(&stmtctx.StatementContext{}, &i); err == nil {
-						return -r
-					}
-				}
-				// TODO: if convert b to DATETIME failed, panic
 			}
 		}
 		panic(fmt.Sprintf("compare %v and %v err: %v", a, b, err))
