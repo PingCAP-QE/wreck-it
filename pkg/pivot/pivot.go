@@ -4,20 +4,21 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"math/rand"
+	"sync"
+	"time"
+
 	"github.com/pingcap/log"
 	"github.com/zhouqiang-cl/wreck-it/pkg/connection"
 	"github.com/zhouqiang-cl/wreck-it/pkg/executor"
 	"github.com/zhouqiang-cl/wreck-it/pkg/generator"
 	"go.uber.org/zap"
-	"math/rand"
-	"sync"
-	"time"
 
 	"github.com/pingcap/parser/model"
 )
 
 type Pivot struct {
-	wg  sync.WaitGroup
+	wg       sync.WaitGroup
 	Conf     *Config
 	DB       *sql.DB
 	DBName   string
@@ -136,7 +137,7 @@ func (p *Pivot) kickup(ctx context.Context) {
 		defer p.wg.Done()
 		for {
 			select {
-			case <- ctx.Done():
+			case <-ctx.Done():
 				return
 			default:
 				p.prepare(ctx)
@@ -183,7 +184,7 @@ func (p *Pivot) ChoosePivotedRow() (map[TableColumn]*connection.QueryItem, []Tab
 	result := make(map[TableColumn]*connection.QueryItem)
 	count := 1
 	if len(p.Tables) > 1 {
-		count = Rd(len(p.Tables) - 1) + 1
+		count = Rd(len(p.Tables)-1) + 1
 	}
 	rand.Shuffle(len(p.Tables), func(i, j int) { p.Tables[i], p.Tables[j] = p.Tables[j], p.Tables[i] })
 	usedTables := p.Tables[:count]
