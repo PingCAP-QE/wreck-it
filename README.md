@@ -1,4 +1,4 @@
-Inspired by Manuel Rigger's paper https://arxiv.org/pdf/2001.04174.pdf
+Inspired by Manuel Rigger's paper [Testing Database Engines via Pivoted Query Synthesis](https://arxiv.org/pdf/2001.04174.pdf)
 # How to run
 ```
 make pivot
