@@ -134,6 +134,9 @@ func (p *Pivot) cleanup(ctx context.Context) {
 
 func (p *Pivot) kickup(ctx context.Context) {
 	p.wg.Add(1)
+	p.prepare(ctx)
+	p.Init(ctx)
+
 	go func() {
 		defer p.wg.Done()
 		for {
@@ -141,9 +144,7 @@ func (p *Pivot) kickup(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			default:
-				p.prepare(ctx)
-				p.Init(ctx)
-				for i := 0; i < 100; i++ {
+				for {
 					p.progress(ctx)
 				}
 			}
