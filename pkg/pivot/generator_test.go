@@ -146,3 +146,80 @@ func TestCase14(t *testing.T) {
 	})
 	require.Equal(t, false, isTrueValue(value))
 }
+
+func TestCase15(t *testing.T) {
+	//CREATE TABLE t0(c0 INT);
+	//INSERT INTO t0(c0) VALUES (0);
+	//SELECT t0.c0 FROM t0 WHERE CHAR(204355900); -- expected: {0}, actual: {}
+
+	value := EvaluateRow(parse(t, "SELECT t0.c0 FROM t0 WHERE CHAR(204355900)"), []Table{{
+		Name:    model.NewCIStr("t0"),
+		Columns: [][3]string{{"c0", "int", "YES"}},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "t0", Name: "c0",}: 0,
+	})
+	require.Equal(t, true, isTrueValue(value))
+}
+
+func TestCase16(t *testing.T) {
+	//CREATE TABLE t0(c0 INT);
+	//CREATE VIEW v0(c0) AS SELECT 0 FROM t0 ORDER BY -t0.c0;
+	//SELECT * FROM v0 RIGHT JOIN t0 ON false; -- connection running loop panic
+}
+
+func TestCase22(t *testing.T) {
+	// CREATE TABLE t0(c0 FLOAT);
+	// CREATE TABLE t1(c0 FLOAT);
+	// INSERT INTO t1(c0) VALUES (0);
+	// INSERT INTO t0(c0) VALUES (0);
+	// SELECT t1.c0 FROM t1, t0 WHERE t0.c0=-t1.c0; -- expected: {0}, actual: {}
+	value := EvaluateRow(parse(t, "SELECT t1.c0 FROM t1, t0 WHERE t0.c0=-t1.c0"), []Table{{
+		Name:    model.NewCIStr("t0"),
+		Columns: [][3]string{{"c0", "float", "YES"}},
+		Indexes: nil,
+	}, {
+		Name:    model.NewCIStr("t1"),
+		Columns: [][3]string{{"c0", "float", "YES"}},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "t0", Name: "c0",}: 0.0,
+		TableColumn{Table: "t1", Name: "c0",}: 0.0,
+	})
+	require.Equal(t, true, isTrueValue(value))
+}
+
+func TestCase29(t *testing.T) {
+	//CREATE TABLE t0(c0 BOOL);
+	//INSERT INTO t0 VALUES (0);
+	//SELECT * FROM t0 WHERE 1 AND 0.4; -- expected: {0}, actual: {}
+	value := EvaluateRow(parse(t, "SELECT * FROM t0 WHERE 1 AND 0.4"), []Table{{
+		Name:    model.NewCIStr("t0"),
+		Columns: [][3]string{{"c0", "bool", "YES"}},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "t0", Name: "c0",}: false,
+	})
+	require.Equal(t, true, isTrueValue(value))
+}
+
+func TestCase30(t *testing.T) {
+	// CREATE TABLE t0(c0 INT, c1 TEXT AS (0.9));
+	// INSERT INTO t0(c0) VALUES (0);
+	// SELECT 0 FROM t0 WHERE false UNION SELECT 0 FROM t0 WHERE NOT t0.c1; -- expected: {0}, actual: {}
+}
+
+func TestCase31(t *testing.T) {
+	//CREATE TABLE t0(c0 INT);
+	//INSERT INTO t0(c0) VALUES (2);
+	//SELECT t0.c0 FROM t0 WHERE (NOT NOT t0.c0) = t0.c0; -- expected: {}, actual: {2}
+
+	value := EvaluateRow(parse(t, "SELECT t0.c0 FROM t0 WHERE (NOT NOT t0.c0) = t0.c0"), []Table{{
+		Name:    model.NewCIStr("t0"),
+		Columns: [][3]string{{"c0", "int", "YES"}},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "t0", Name: "c0",}: 2,
+	})
+	require.Equal(t, true, isTrueValue(value))
+}
