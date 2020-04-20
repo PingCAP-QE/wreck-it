@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/juju/errors"
 	"github.com/pingcap/log"
 	"github.com/zhouqiang-cl/wreck-it/pkg/connection"
 	"github.com/zhouqiang-cl/wreck-it/pkg/executor"
@@ -126,7 +127,10 @@ func (p *Pivot) prepare(ctx context.Context) {
 	}
 
 	for _, table := range p.Executor.GetTables() {
-		sql, _ := p.Executor.GenerateDMLInsertByTable(table.Table)
+		sql, err := p.Executor.GenerateDMLInsertByTable(table.Table)
+		if err != nil {
+			panic(errors.ErrorStack(err))
+		}
 		err = p.Executor.Exec(sql.SQLStmt)
 		if err != nil {
 			log.L().Error("insert data failed", zap.String("sql", sql.SQLStmt), zap.Error(err))
