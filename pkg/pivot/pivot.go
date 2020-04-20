@@ -13,6 +13,7 @@ import (
 	"github.com/zhouqiang-cl/wreck-it/pkg/executor"
 	"github.com/zhouqiang-cl/wreck-it/pkg/generator"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/pingcap/parser/model"
 )
@@ -23,6 +24,7 @@ type Pivot struct {
 	DB       *sql.DB
 	DBName   string
 	Executor *executor.Executor
+	round    int
 
 	Generator
 }
@@ -92,12 +94,18 @@ func (p *Pivot) Init(ctx context.Context) {
 
 func (p *Pivot) prepare(ctx context.Context) {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	for i := 0; i < r.Intn(10)+1; i++ {
-		sql, _ := p.Executor.GenerateDDLCreateTable()
-		err := p.Executor.Exec(sql.SQLStmt)
-		if err != nil {
-			log.L().Error("create table failed", zap.String("sql", sql.SQLStmt), zap.Error(err))
-		}
+
+	g, _ := errgroup.WithContext(ctx)
+	for _, columnTypes := range ComposeAllColumnTypes(-1) {
+		colTs := make([]string, len(columnTypes))
+		copy(colTs, columnTypes)
+		g.Go(func() error {
+			sql, _ := p.Executor.GenerateDDLCreateTable(colTs)
+			return p.Executor.Exec(sql.SQLStmt)
+		})
+	}
+	if err := g.Wait(); err != nil {
+		log.L().Error("create table failed", zap.Error(err))
 	}
 
 	err := p.Executor.ReloadSchema()
@@ -145,7 +153,9 @@ func (p *Pivot) kickup(ctx context.Context) {
 				return
 			default:
 				for {
+					p.round++
 					p.progress(ctx)
+					time.Sleep(time.Second)
 				}
 			}
 		}
@@ -178,7 +188,7 @@ func (p *Pivot) progress(ctx context.Context) {
 		))
 	}
 	fmt.Printf("run one statment [%s] successfully!\n", selectStmt)
-	log.Info("run one statment successfully!", zap.String("query", selectStmt))
+	// log.Info("run one statment successfully!", zap.String("query", selectStmt))
 }
 
 // may move to another struct
@@ -212,7 +222,7 @@ func (p *Pivot) ChoosePivotedRow() (map[TableColumn]*connection.QueryItem, []Tab
 }
 
 func (p *Pivot) GenSelectStmt(pivotRows map[TableColumn]*connection.QueryItem, usedTables []Table) (string, []TableColumn, error) {
-	stmtAst, err := p.selectStmtAst(6, usedTables)
+	stmtAst, err := p.selectStmtAst(3, usedTables)
 	if err != nil {
 		return "", nil, err
 	}
@@ -239,6 +249,12 @@ func (p *Pivot) execSelect(stmt string) ([][]*connection.QueryItem, error) {
 
 // TODO implement it
 func (p *Pivot) verify(originRow map[TableColumn]*connection.QueryItem, columns []TableColumn, resultSets [][]*connection.QueryItem) bool {
+	for _, row := range resultSets {
+		if p.checkRow(originRow, columns, row) {
+			fmt.Printf("Round %d, verify pass! \n", p.round)
+			return true
+		}
+	}
 	fmt.Println("=========  ORIGIN ROWS ======")
 	for k, v := range originRow {
 		fmt.Printf("key: %+v, value: [null: %v, value: %s]\n", k, v.Null, v.ValString)
@@ -248,12 +264,6 @@ func (p *Pivot) verify(originRow map[TableColumn]*connection.QueryItem, columns 
 	for _, c := range columns {
 		fmt.Printf("Table: %s, Name: %s\n", c.Table, c.Name)
 	}
-
-	for _, row := range resultSets {
-		if p.checkRow(originRow, columns, row) {
-			return true
-		}
-	}
 	fmt.Printf("=========  DATA ======, count: %d\n", len(resultSets))
 	for i, r := range resultSets {
 		fmt.Printf("$$$$$$$$$ line %d\n", i)
@@ -262,13 +272,13 @@ func (p *Pivot) verify(originRow map[TableColumn]*connection.QueryItem, columns 
 		}
 	}
 
-	fmt.Printf("Verify failed! \n")
+	fmt.Printf("Round %d, verify failed! \n", p.round)
 	return false
 }
 
 func (p *Pivot) checkRow(originRow map[TableColumn]*connection.QueryItem, columns []TableColumn, resultSet []*connection.QueryItem) bool {
 	for i, c := range columns {
-		fmt.Printf("i: %d, column: %+v, left: %+v, right: %+v", i, c, originRow[c], resultSet[i])
+		// fmt.Printf("i: %d, column: %+v, left: %+v, right: %+v", i, c, originRow[c], resultSet[i])
 		if !compareQueryItem(originRow[c], resultSet[i]) {
 			return false
 		}

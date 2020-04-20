@@ -16,10 +16,11 @@ package data_gen
 import (
 	"fmt"
 	//"github.com/pingcap/parser/ast"
-	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/types"
-	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/util"
 	"strings"
 	"time"
+
+	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/types"
+	"github.com/zhouqiang-cl/wreck-it/pkg/go-sqlsmith/util"
 
 	"github.com/pingcap/parser/mysql"
 	tidbTypes "github.com/pingcap/tidb/types"
@@ -97,6 +98,30 @@ func GenerateDataItem(column *types.Column) interface{} {
 	return res
 }
 
+// GenerateZeroDataItem gets zero data interface with given type
+func GenerateZeroDataItem(column *types.Column) interface{} {
+	var res interface{}
+	// there will be 1/3 possibility return nil
+	//if !column.HasOption(ast.ColumnOptionNotNull) && util.RdRange(0, 3) == 0 {
+	//	return nil
+	//}
+	switch column.DataType {
+	case "varchar":
+		res = ""
+	case "text":
+		res = ""
+	case "int":
+		res = 0
+	case "datetime":
+		res = tidbTypes.NewTime(tidbTypes.FromDate(0, 0, 0, 0, 0, 0, 0), mysql.TypeDatetime, 0)
+	case "timestamp":
+		res = tidbTypes.NewTime(tidbTypes.FromDate(0, 0, 0, 0, 0, 0, 0), mysql.TypeTimestamp, 0)
+	case "float":
+		res = float64(0)
+	}
+	return res
+}
+
 // GenerateStringItem generate string item
 func GenerateStringItem() string {
 	return strings.ToUpper(GenerateStringItemLen(100))
@@ -144,7 +169,7 @@ func GenerateTiDBDateItem() tidbTypes.Time {
 }
 
 func GenerateTiDBTimestampItem() tidbTypes.Time {
-	return tidbTypes.NewTime(tidbTypes.FromGoTime(GenerateTimestampItem()), mysql.TypeDatetime, 0)
+	return tidbTypes.NewTime(tidbTypes.FromGoTime(GenerateTimestampItem()), mysql.TypeTimestamp, 0)
 }
 
 func ifDaylightTime(t time.Time) bool {
