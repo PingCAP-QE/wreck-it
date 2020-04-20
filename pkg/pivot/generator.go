@@ -258,38 +258,38 @@ func (g *Generator) selectStmt(node *ast.SelectStmt, usedTables []Table, pivotRo
 	return sql, columnInfos, err
 }
 
-func Evaluate(e ast.Node, usedTables []Table, pivotRows map[TableColumn]*connection.QueryItem) parser_driver.ValueExpr {
+func EvaluateRow(e ast.Node, usedTables []Table, pivotRows map[TableColumn]interface{}) parser_driver.ValueExpr {
 	switch t := e.(type) {
 	case *ast.ParenthesesExpr:
-		return Evaluate(t.Expr, usedTables, pivotRows)
+		return EvaluateRow(t.Expr, usedTables, pivotRows)
 	case *ast.BinaryOperationExpr:
 		switch t.Op {
 		case opcode.LogicXor:
-			r, _ := LogicXor.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := LogicXor.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.LogicAnd:
-			r, _ := LogicAnd.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := LogicAnd.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.LogicOr:
-			r, _ := LogicOr.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := LogicOr.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.GT:
-			r, _ := Gt.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := Gt.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.GE:
-			r, _ := Ge.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := Ge.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.LT:
-			r, _ := Lt.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := Lt.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.LE:
-			r, _ := Le.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := Le.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.NE:
-			r, _ := Ne.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := Ne.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		case opcode.EQ:
-			r, _ := Eq.Eval(Evaluate(t.L, usedTables, pivotRows), Evaluate(t.R, usedTables, pivotRows))
+			r, _ := Eq.Eval(EvaluateRow(t.L, usedTables, pivotRows), EvaluateRow(t.R, usedTables, pivotRows))
 			return r
 		default:
 			panic(fmt.Sprintf("no op implements %s %d", t.Op.String(), t.Op))
@@ -298,8 +298,7 @@ func Evaluate(e ast.Node, usedTables []Table, pivotRows map[TableColumn]*connect
 		for key, value := range pivotRows {
 			if key.Table+"."+key.Name == t.Name.OrigColName() {
 				v := parser_driver.ValueExpr{}
-				val, _ := getTypedValue(value)
-				v.SetValue(val)
+				v.SetValue(value)
 				return v
 			}
 		}
@@ -312,9 +311,34 @@ func Evaluate(e ast.Node, usedTables []Table, pivotRows map[TableColumn]*connect
 	case *parser_driver.ValueExpr: // is reachable?
 		panic("not reachable")
 	}
+
+	if e == nil {
+		return trueValueExpr()
+	}
+
+
+
+	panic("not reachable")
 	v := parser_driver.ValueExpr{}
 	v.SetNull()
 	return v
+}
+
+func Evaluate(whereClause ast.Node, usedTables []Table, pivotRows map[TableColumn]*connection.QueryItem) parser_driver.ValueExpr {
+	row := map[TableColumn]interface{}{}
+	for key, value := range pivotRows {
+		row[key], _ = getTypedValue(value)
+	}
+	return EvaluateRow(whereClause, usedTables, row)
+}
+
+func trueValueExpr() parser_driver.ValueExpr {
+	d := tidb_types.Datum{}
+	d.SetInt64(1)
+	return parser_driver.ValueExpr{
+		TexprNode: ast.TexprNode{},
+		Datum:     d,
+	}
 }
 
 func getTypedValue(it *connection.QueryItem) (interface{}, byte) {

@@ -174,8 +174,8 @@ func ConvertToBoolOrNull(a parser_driver.ValueExpr) int8 {
 }
 
 func compare(a, b parser_driver.ValueExpr) int {
-	res, err := a.CompareDatum(&stmtctx.StatementContext{AllowInvalidDate: true, IgnoreTruncate: true}, &b.Datum)
+	res, _ := a.CompareDatum(&stmtctx.StatementContext{AllowInvalidDate: true, IgnoreTruncate: true}, &b.Datum)
 	// NOTE: err is warning, not really error
-	fmt.Printf("@@compare a: %v t(a): %d b: %v r: %d err: %v\n", a.GetValue(), a.GetType().Tp, b.GetValue(), res, err)
+	//fmt.Printf("@@compare a: %v t(a): %d b: %v r: %d err: %v\n", a.GetValue(), a.GetType().Tp, b.GetValue(), res, err)
 	return res
 }
