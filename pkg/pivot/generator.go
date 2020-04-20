@@ -94,7 +94,7 @@ func (g *Generator) whereClauseAst(depth int, usedTables []Table) ast.ExprNode {
 		// TODO: more ops
 		// TODO: support single value AS bool
 		var f Function
-		switch Rd(6) {
+		switch Rd(9) {
 		case 0:
 			node.Op = opcode.GT
 			f = Gt
@@ -110,9 +110,18 @@ func (g *Generator) whereClauseAst(depth int, usedTables []Table) ast.ExprNode {
 		case 4:
 			node.Op = opcode.GE
 			f = Ge
-		default:
+		case 5:
 			node.Op = opcode.EQ
 			f = Eq
+		case 6:
+			node.Op = opcode.LogicXor
+			f = LogicAnd
+		case 7:
+			node.Op = opcode.LogicOr
+			f = LogicOr
+		default:
+			node.Op = opcode.LogicAnd
+			f = LogicXor
 		}
 		argType := 0
 		if Rd(3) > 0 {
