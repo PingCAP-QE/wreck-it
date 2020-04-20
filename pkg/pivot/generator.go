@@ -316,8 +316,6 @@ func EvaluateRow(e ast.Node, usedTables []Table, pivotRows map[TableColumn]inter
 		return trueValueExpr()
 	}
 
-
-
 	panic("not reachable")
 	v := parser_driver.ValueExpr{}
 	v.SetNull()
@@ -351,6 +349,9 @@ func getTypedValue(it *connection.QueryItem) (interface{}, byte) {
 	case "TIMESTAMP", "DATE", "DATETIME":
 		t, _ := time.Parse("2006-01-02 15:04:05", it.ValString)
 		return tidb_types.NewTime(tidb_types.FromGoTime(t), mysql.TypeTimestamp, 6), mysql.TypeDatetime
+	case "FLOAT", "DOUBLE", "DECIMAL":
+		f, _ := strconv.ParseFloat(it.ValString, 64)
+		return f, mysql.TypeDouble
 	case "NULL":
 		return nil, mysql.TypeNull
 	default:
