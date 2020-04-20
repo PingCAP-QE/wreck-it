@@ -343,16 +343,19 @@ func randor0(cols []*types.Column) [][]ast.ExprNode {
 		res     [][]ast.ExprNode
 		zeroVal = ast.NewValueExpr(data_gen.GenerateZeroDataItem(cols[0]), "", "")
 		randVal = ast.NewValueExpr(data_gen.GenerateDataItem(cols[0]), "", "")
+		nullVal = ast.NewValueExpr(nil, "", "")
 	)
 
 	if len(cols) == 1 {
 		res = append(res, []ast.ExprNode{zeroVal})
 		res = append(res, []ast.ExprNode{randVal})
+		res = append(res, []ast.ExprNode{nullVal})
 		return res
 	}
 	for _, sub := range randor0(cols[1:]) {
 		res = append(res, append([]ast.ExprNode{zeroVal}, sub...))
 		res = append(res, append([]ast.ExprNode{randVal}, sub...))
+		res = append(res, append([]ast.ExprNode{nullVal}, sub...))
 	}
 	return res
 }
