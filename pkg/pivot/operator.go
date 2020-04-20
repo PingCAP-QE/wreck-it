@@ -2,7 +2,6 @@ package pivot
 
 import (
 	"fmt"
-	"math"
 	"regexp"
 
 	"github.com/pingcap/tidb/sessionctx/stmtctx"
@@ -141,15 +140,15 @@ func ConvertToBoolOrNull(a parser_driver.ValueExpr) int8 {
 		}
 		return 0
 	case types.KindFloat32:
-		if math.Abs(float64(a.GetValue().(float32))) >= 1 {
-			return 1
+		if a.GetFloat32() == 0 {
+			return 0
 		}
-		return 0
+		return 1
 	case types.KindFloat64:
-		if math.Abs(a.GetValue().(float64)) >= 1 {
-			return 1
+		if a.GetFloat64() == 0 {
+			return 0
 		}
-		return 0
+		return 1
 	case types.KindString:
 		s := a.GetValue().(string)
 		match, _ := regexp.MatchString(`^\-{0,1}[1-9]+|^\-{0,1}0+[1-9]`, s)
@@ -160,6 +159,12 @@ func ConvertToBoolOrNull(a parser_driver.ValueExpr) int8 {
 	case types.KindMysqlDecimal:
 		d := a.GetMysqlDecimal()
 		if d.IsZero() {
+			return 0
+		}
+		return 1
+	case types.KindMysqlTime:
+		t := a.GetMysqlTime()
+		if t.IsZero() {
 			return 0
 		}
 		return 1
