@@ -155,7 +155,6 @@ func (p *Pivot) kickup(ctx context.Context) {
 				for {
 					p.round++
 					p.progress(ctx)
-					time.Sleep(time.Second)
 				}
 			}
 		}
