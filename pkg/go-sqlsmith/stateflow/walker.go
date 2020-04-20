@@ -325,17 +325,17 @@ func (s *StateFlow) walkColumns(columns *[]*ast.ColumnName, table *types.Table) 
 }
 
 func (s *StateFlow) walkLists(lists *[][]ast.ExprNode, columns []*types.Column) {
-	// count := util.RdRange(1, 20)
-	// for i := 0; i < count; i++ {
-	// 	*lists = append(*lists, s.makeList(columns))
-	// }
-	var noIDColumns []*types.Column
-	for _, column := range columns {
-		if column.Column != "id" {
-			noIDColumns = append(noIDColumns, column)
-		}
+	count := util.RdRange(10, 20)
+	for i := 0; i < count; i++ {
+		*lists = append(*lists, randList(columns))
 	}
-	*lists = append(*lists, randor0(columns)...)
+	// var noIDColumns []*types.Column
+	// for _, column := range columns {
+	// 	if column.Column != "id" {
+	// 		noIDColumns = append(noIDColumns, column)
+	// 	}
+	// }
+	// *lists = append(*lists, randor0(columns)...)
 }
 
 func randor0(cols []*types.Column) [][]ast.ExprNode {
@@ -358,6 +358,27 @@ func randor0(cols []*types.Column) [][]ast.ExprNode {
 		res = append(res, append([]ast.ExprNode{nullVal}, sub...))
 	}
 	return res
+}
+
+func randList(columns []*types.Column) []ast.ExprNode {
+	var list []ast.ExprNode
+	for _, column := range columns {
+		if column.Column == "id" {
+			continue
+		}
+		if column.Column == "uuid" {
+			list = append(list, ast.NewValueExpr(data_gen.GetUUID(), "", ""))
+		} else {
+			// GenerateEnumDataItem
+			switch util.Rd(3) {
+			case 0:
+				list = append(list, ast.NewValueExpr(nil, "", ""))
+			default:
+				list = append(list, ast.NewValueExpr(data_gen.GenerateEnumDataItem(column), "", ""))
+			}
+		}
+	}
+	return list
 }
 
 func (s *StateFlow) makeList(columns []*types.Column) []ast.ExprNode {
