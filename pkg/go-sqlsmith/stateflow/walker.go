@@ -325,10 +325,36 @@ func (s *StateFlow) walkColumns(columns *[]*ast.ColumnName, table *types.Table) 
 }
 
 func (s *StateFlow) walkLists(lists *[][]ast.ExprNode, columns []*types.Column) {
-	count := util.RdRange(1, 20)
-	for i := 0; i < count; i++ {
-		*lists = append(*lists, s.makeList(columns))
+	// count := util.RdRange(1, 20)
+	// for i := 0; i < count; i++ {
+	// 	*lists = append(*lists, s.makeList(columns))
+	// }
+	var noIDColumns []*types.Column
+	for _, column := range columns {
+		if column.Column != "id" {
+			noIDColumns = append(noIDColumns, column)
+		}
 	}
+	*lists = append(*lists, randor0(columns)...)
+}
+
+func randor0(cols []*types.Column) [][]ast.ExprNode {
+	var (
+		res     [][]ast.ExprNode
+		zeroVal = ast.NewValueExpr(data_gen.GenerateZeroDataItem(cols[0]), "", "")
+		randVal = ast.NewValueExpr(data_gen.GenerateDataItem(cols[0]), "", "")
+	)
+
+	if len(cols) == 1 {
+		res = append(res, []ast.ExprNode{zeroVal})
+		res = append(res, []ast.ExprNode{randVal})
+		return res
+	}
+	for _, sub := range randor0(cols[1:]) {
+		res = append(res, append([]ast.ExprNode{zeroVal}, sub...))
+		res = append(res, append([]ast.ExprNode{randVal}, sub...))
+	}
+	return res
 }
 
 func (s *StateFlow) makeList(columns []*types.Column) []ast.ExprNode {
