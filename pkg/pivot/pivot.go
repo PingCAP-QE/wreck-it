@@ -173,7 +173,7 @@ func (p *Pivot) progress(ctx context.Context) {
 	// verify pivot row in result row set
 	correct := p.verify(pivotRows, columns, resultRows)
 	if !correct {
-		panic(fmt.Sprintf("data verified failed. pivot rows: %s . result rows: %s . query: %s",
+		panic(fmt.Sprintf("data verified failed. pivot rows: %v . result rows: %v . query: %s",
 			pivotRows, resultRows, selectStmt,
 		))
 	}
