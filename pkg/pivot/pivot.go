@@ -199,8 +199,12 @@ func (p *Pivot) ChoosePivotedRow() (map[TableColumn]*connection.QueryItem, []Tab
 	result := make(map[TableColumn]*connection.QueryItem)
 	count := 1
 	if len(p.Tables) > 1 {
-		count = Rd(len(p.Tables)-1) + 1
+		// avoid too deep joins
+		if count = Rd(len(p.Tables) - 1) + 1; count > 4 {
+			count = Rd(4) + 1
+		}
 	}
+	fmt.Printf("#####count :%d", count)
 	rand.Shuffle(len(p.Tables), func(i, j int) { p.Tables[i], p.Tables[j] = p.Tables[j], p.Tables[i] })
 	usedTables := p.Tables[:count]
 	var reallyUsed []Table
@@ -221,6 +225,7 @@ func (p *Pivot) ChoosePivotedRow() (map[TableColumn]*connection.QueryItem, []Tab
 
 		}
 	}
+	fmt.Printf("####used %+v", reallyUsed)
 	return result, reallyUsed, nil
 }
 
@@ -247,10 +252,10 @@ func (p *Pivot) ExecAndVerify(stmt string, originRow map[TableColumn]*connection
 
 // may not return string
 func (p *Pivot) execSelect(stmt string) ([][]*connection.QueryItem, error) {
+	fmt.Printf("exec: %s", stmt)
 	return p.Executor.GetConn().Select(stmt)
 }
 
-// TODO implement it
 func (p *Pivot) verify(originRow map[TableColumn]*connection.QueryItem, columns []TableColumn, resultSets [][]*connection.QueryItem) bool {
 	for _, row := range resultSets {
 		if p.checkRow(originRow, columns, row) {
@@ -267,13 +272,13 @@ func (p *Pivot) verify(originRow map[TableColumn]*connection.QueryItem, columns 
 	for _, c := range columns {
 		fmt.Printf("Table: %s, Name: %s\n", c.Table, c.Name)
 	}
-	fmt.Printf("=========  DATA ======, count: %d\n", len(resultSets))
-	for i, r := range resultSets {
-		fmt.Printf("$$$$$$$$$ line %d\n", i)
-		for j, c := range r {
-			fmt.Printf("  table: %s, field: %s, field: %s, value: %s\n", columns[j].Table, columns[j].Name, c.ValType.Name(), c.ValString)
-		}
-	}
+	// fmt.Printf("=========  DATA ======, count: %d\n", len(resultSets))
+	// for i, r := range resultSets {
+	// 	fmt.Printf("$$$$$$$$$ line %d\n", i)
+	// 	for j, c := range r {
+	// 		fmt.Printf("  table: %s, field: %s, field: %s, value: %s\n", columns[j].Table, columns[j].Name, c.ValType.Name(), c.ValString)
+	// 	}
+	// }
 
 	fmt.Printf("Round %d, verify failed! \n", p.round)
 	return false

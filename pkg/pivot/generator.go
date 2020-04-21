@@ -56,43 +56,40 @@ func (g *Generator) selectStmtAst(depth int, usedTables []Table) (ast.SelectStmt
 func (g *Generator) whereClauseAst(depth int, usedTables []Table) ast.ExprNode {
 	// TODO: support single operation like NOT
 	// TODO: support func
+	// TODO: support subquery
+	// TODO: more ops
+	// TODO: support single value AS bool
 	pthese := ast.ParenthesesExpr{}
+	switch Rd(4) {
+	case 0:
+		g.makeUnaryOp(&pthese, depth, usedTables)
+	default:
+		g.makeBinaryOp(&pthese, depth, usedTables)
+	}
+	return &pthese
+}
+
+// change ParenthesesExpr to more extensive
+func (g *Generator) makeBinaryOp(e *ast.ParenthesesExpr, depth int, usedTables []Table) {
 	node := ast.BinaryOperationExpr{}
-	pthese.Expr = &node
+	e.Expr = &node
 	if depth > 0 {
-		r := Rd(4)
+		r := Rd(3)
 		switch r {
 		case 0:
 			node.Op = opcode.LogicXor
+			node.L = g.whereClauseAst(depth-1, usedTables)
+			node.R = g.whereClauseAst(Rd(depth), usedTables)
 		case 1:
 			node.Op = opcode.LogicOr
+			node.L = g.whereClauseAst(depth-1, usedTables)
+			node.R = g.whereClauseAst(Rd(depth), usedTables)
 		default:
 			node.Op = opcode.LogicAnd
+			node.L = g.whereClauseAst(depth-1, usedTables)
+			node.R = g.whereClauseAst(Rd(depth), usedTables)
 		}
-		node.L = g.whereClauseAst(depth-1, usedTables)
-		node.R = g.whereClauseAst(Rd(depth), usedTables)
 	} else {
-		// TODO: support subquery
-		// if complex > 0 {
-		// 	switch Rd(4) {
-		// 	case 0:
-		// 		return g.patternInExpr()
-		// 	default:
-		// 		switch Rd(4) {
-		// 		case 0:
-		// 			node.Op = opcode.GT
-		// 		case 1:
-		// 			node.Op = opcode.LT
-		// 		case 2:
-		// 			node.Op = opcode.NE
-		// 		default:
-		// 			node.Op = opcode.EQ
-		// 		}
-		// 		node.L = g.exprNode(false)
-		// 		node.R = g.exprNode(true)
-		// 	}
-		// TODO: more ops
-		// TODO: support single value AS bool
 		var f Function
 		switch Rd(9) {
 		case 0:
@@ -138,7 +135,29 @@ func (g *Generator) whereClauseAst(depth int, usedTables []Table) ast.ExprNode {
 			node.R = g.constValueExpr(acceptType)
 		}
 	}
-	return &pthese
+}
+
+func (g *Generator) makeUnaryOp(e *ast.ParenthesesExpr, depth int, usedTables []Table) {
+	node := ast.UnaryOperationExpr{}
+	e.Expr = &node
+	if depth > 0 {
+		switch Rd(1) {
+		default:
+			node.Op = opcode.Not
+			node.V = g.whereClauseAst(depth-1, usedTables)
+		}
+	} else {
+		switch Rd(1) {
+		default:
+			node.Op = opcode.Not
+			// no need to check params number
+			if Rd(3) > 0 {
+				node.V = g.columnExpr(usedTables, AnyArg)
+			} else {
+				node.V = g.constValueExpr(AnyArg)
+			}
+		}
+	}
 }
 
 // TODO: important! resolve random when a kind was banned
@@ -294,6 +313,12 @@ func EvaluateRow(e ast.Node, usedTables []Table, pivotRows map[TableColumn]inter
 		default:
 			panic(fmt.Sprintf("no op implements %s %d", t.Op.String(), t.Op))
 		}
+	case *ast.UnaryOperationExpr:
+		switch t.Op {
+		case opcode.Not:
+			r, _ := Not.Eval(EvaluateRow(t.V, usedTables, pivotRows))
+			return r
+		}
 	case *ast.ColumnNameExpr:
 		for key, value := range pivotRows {
 			if key.Table+"."+key.Name == t.Name.OrigColName() {
@@ -405,7 +430,7 @@ func (g *Generator) walkResultFields(node *ast.SelectStmt, usedTables []Table) [
 func (g *Generator) walkResultSetNode(node *ast.Join, usedTables []Table) {
 	l := len(usedTables)
 	var left *ast.Join = node
-	// TODO: it works, but need to be simplied
+	// TODO: it works, but need to refactory
 	if l == 1 {
 		ts := ast.TableSource{}
 		tn := ast.TableName{}
