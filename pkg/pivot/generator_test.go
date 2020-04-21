@@ -246,3 +246,26 @@ func TestCase_s02(t *testing.T) {
 	})
 	require.Equal(t, false, isTrueValue(value))
 }
+
+func TestCase_s03(t *testing.T) {
+	value := EvaluateRow(parse(t, `
+
+SELECT table_int_varchar_float_text.id,
+       table_int_varchar_float_text.col_int,
+       table_int_varchar_float_text.col_varchar,
+       table_int_varchar_float_text.col_float,
+       table_int_varchar_float_text.col_text
+FROM table_int_varchar_float_text
+WHERE (((!table_int_varchar_float_text.id) XOR (-1
+                                                AND table_int_varchar_float_text.col_float)))
+
+`), []Table{{
+		Name:    model.NewCIStr("table_int_varchar_float_text"),
+		Columns: [][3]string{{"id", "int", "YES"}, {"col_int", "int", "YES"}},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "table_int_varchar_float_text", Name: "id"}:        5,
+		TableColumn{Table: "table_int_varchar_float_text", Name: "col_float"}: nil,
+	})
+	require.Equal(t, false, isTrueValue(value))
+}

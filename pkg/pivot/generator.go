@@ -163,7 +163,7 @@ func (g *Generator) makeUnaryOp(e *ast.ParenthesesExpr, depth int, usedTables []
 // TODO: important! resolve random when a kind was banned
 func (g *Generator) constValueExpr(arg int) ast.ValueExpr {
 	switch x := Rd(13); x {
-	case 8, 9, 10:
+	case 6, 7, 8, 9, 10:
 		if arg&FloatArg != 0 {
 			switch y := Rd(6); y {
 			case 0, 1:
@@ -177,20 +177,20 @@ func (g *Generator) constValueExpr(arg int) ast.ValueExpr {
 			}
 		}
 		fallthrough
-	case 7:
-		if arg&DatetimeArg != 0 {
-			t := tidb_types.NewTime(tidb_types.FromGoTime(RdDate()), mysql.TypeDatetime, 0)
-			n := ast.NewValueExpr(t, "", "")
-			return n
-		}
-		fallthrough
-	case 6:
-		if arg&DatetimeArg != 0 {
-			t := tidb_types.NewTime(tidb_types.FromGoTime(RdTimestamp()), mysql.TypeTimestamp, int8(Rd(7)))
-			n := ast.NewValueExpr(t, "", "")
-			return n
-		}
-		fallthrough
+	//case 7:
+	//	if arg&DatetimeArg != 0 {
+	//		t := tidb_types.NewTime(tidb_types.FromGoTime(RdDate()), mysql.TypeDatetime, 0)
+	//		n := ast.NewValueExpr(t, "", "")
+	//		return n
+	//	}
+	//	fallthrough
+	//case 6:
+	//	if arg&DatetimeArg != 0 {
+	//		t := tidb_types.NewTime(tidb_types.FromGoTime(RdTimestamp()), mysql.TypeTimestamp, int8(Rd(7)))
+	//		n := ast.NewValueExpr(t, "", "")
+	//		return n
+	//	}
+	//	fallthrough
 	case 3, 4, 5:
 		if arg&IntArg != 0 {
 			switch y := Rd(6); y {
@@ -365,6 +365,9 @@ func trueValueExpr() parser_driver.ValueExpr {
 }
 
 func getTypedValue(it *connection.QueryItem) (interface{}, byte) {
+	if it.Null {
+		return nil, mysql.TypeNull
+	}
 	switch it.ValType.DatabaseTypeName() {
 	case "VARCHAR", "TEXT", "CHAR":
 		return it.ValString, mysql.TypeString
@@ -377,8 +380,6 @@ func getTypedValue(it *connection.QueryItem) (interface{}, byte) {
 	case "FLOAT", "DOUBLE", "DECIMAL":
 		f, _ := strconv.ParseFloat(it.ValString, 64)
 		return f, mysql.TypeDouble
-	case "NULL":
-		return nil, mysql.TypeNull
 	default:
 		panic(fmt.Sprintf("unreachable type %s", it.ValType.DatabaseTypeName()))
 	}

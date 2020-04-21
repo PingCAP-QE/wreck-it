@@ -32,10 +32,10 @@ var (
 	intEnums    = []int{0, 1, -1, 65535}
 	floatEnums  = []float64{0, 0.1, 1.0000, -0.1, -1.0000, 0.5, 1.5}
 	timeEnums   = []tidbTypes.CoreTime{
-		//tidbTypes.FromDate(0, 0, 0, 0, 0, 0, 0),
-		//tidbTypes.FromDate(1, 1, 1, 0, 0, 0, 0),
+		tidbTypes.FromDate(0, 0, 0, 0, 0, 0, 0),
+		tidbTypes.FromDate(1, 1, 1, 0, 0, 0, 0),
 		tidbTypes.FromDate(2020, 2, 2, 2, 2, 2, 0),
-		//tidbTypes.FromDate(9999, 9, 9, 9, 9, 9, 0),
+		tidbTypes.FromDate(9999, 9, 9, 9, 9, 9, 0),
 	}
 )
 
