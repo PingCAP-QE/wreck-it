@@ -186,9 +186,12 @@ func (p *Pivot) progress(ctx context.Context) {
 	// verify pivot row in result row set
 	correct := p.verify(pivotRows, columns, resultRows)
 	if !correct {
-		panic(fmt.Sprintf("data verified failed. pivot rows: %v . result rows: %v . query: %s",
-			pivotRows, resultRows, selectStmt,
-		))
+		fmt.Printf("query:%s\n", selectStmt)
+		fmt.Printf("row:\n")
+		for column, value := range pivotRows {
+			fmt.Printf("%s.%s:%v\n", column.Table, column.Name, value.ValString)
+		}
+		panic("data verifed failed")
 	}
 	fmt.Printf("run one statment [%s] successfully!\n", selectStmt)
 	// log.Info("run one statment successfully!", zap.String("query", selectStmt))
@@ -200,7 +203,7 @@ func (p *Pivot) ChoosePivotedRow() (map[TableColumn]*connection.QueryItem, []Tab
 	count := 1
 	if len(p.Tables) > 1 {
 		// avoid too deep joins
-		if count = Rd(len(p.Tables) - 1) + 1; count > 4 {
+		if count = Rd(len(p.Tables)-1) + 1; count > 4 {
 			count = Rd(4) + 1
 		}
 	}
@@ -230,7 +233,7 @@ func (p *Pivot) ChoosePivotedRow() (map[TableColumn]*connection.QueryItem, []Tab
 }
 
 func (p *Pivot) GenSelectStmt(pivotRows map[TableColumn]*connection.QueryItem, usedTables []Table) (string, []TableColumn, error) {
-	stmtAst, err := p.selectStmtAst(3, usedTables)
+	stmtAst, err := p.selectStmtAst(1, usedTables)
 	if err != nil {
 		return "", nil, err
 	}
@@ -263,15 +266,15 @@ func (p *Pivot) verify(originRow map[TableColumn]*connection.QueryItem, columns 
 			return true
 		}
 	}
-	fmt.Println("=========  ORIGIN ROWS ======")
-	for k, v := range originRow {
-		fmt.Printf("key: %+v, value: [null: %v, value: %s]\n", k, v.Null, v.ValString)
-	}
-
-	fmt.Println("=========  COLUMNS ======")
-	for _, c := range columns {
-		fmt.Printf("Table: %s, Name: %s\n", c.Table, c.Name)
-	}
+	//fmt.Println("=========  ORIGIN ROWS ======")
+	//for k, v := range originRow {
+	//	fmt.Printf("key: %+v, value: [null: %v, value: %s]\n", k, v.Null, v.ValString)
+	//}
+	//
+	//fmt.Println("=========  COLUMNS ======")
+	//for _, c := range columns {
+	//	fmt.Printf("Table: %s, Name: %s\n", c.Table, c.Name)
+	//}
 	// fmt.Printf("=========  DATA ======, count: %d\n", len(resultSets))
 	// for i, r := range resultSets {
 	// 	fmt.Printf("$$$$$$$$$ line %d\n", i)

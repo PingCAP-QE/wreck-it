@@ -18,8 +18,8 @@ var (
 		"int",
 		"varchar",
 		"float",
-		"timestamp",
-		"datetime",
+		//"timestamp",
+		//"datetime",
 		"text",
 	}
 )

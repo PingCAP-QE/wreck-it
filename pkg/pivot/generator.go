@@ -42,7 +42,7 @@ func (g *Generator) selectStmtAst(depth int, usedTables []Table) (ast.SelectStmt
 		},
 	}
 
-	selectStmtNode.Where = g.whereClauseAst(Rd(3)+1, usedTables)
+	selectStmtNode.Where = g.whereClauseAst(depth, usedTables)
 
 	selectStmtNode.From = &ast.TableRefsClause{
 		TableRefs: &ast.Join{
