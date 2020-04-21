@@ -269,3 +269,85 @@ WHERE (((!table_int_varchar_float_text.id) XOR (-1
 	})
 	require.Equal(t, false, isTrueValue(value))
 }
+
+func TestCase_s04(t *testing.T) {
+	// table_varchar_float_text.id:15
+	// table_varchar_float_text.col_varchar:true
+	// table_varchar_float_text.col_float:-0.1
+	// table_varchar_float_text.col_text:-1
+	// table_int.id:9
+	// table_int.col_int:1
+	value := EvaluateRow(parse(t, `
+SELECT table_varchar_float_text.id,
+       table_varchar_float_text.col_varchar,
+       table_varchar_float_text.col_float,
+       table_varchar_float_text.col_text,
+       table_int.id,
+       table_int.col_int
+FROM table_varchar_float_text
+JOIN table_int
+WHERE !((table_varchar_float_text.col_float XOR 15))
+`), []Table{{
+		Name: model.NewCIStr("table_varchar_float_text"),
+		Columns: [][3]string{
+			{"id", "int", "YES"},
+			{"col_varchar", "varchar", "YES"},
+			{"col_float", "float", "YES"},
+			{"col_text", "text", "YES"},
+		},
+		Indexes: nil,
+	}, {
+		Name: model.NewCIStr("table_int"),
+		Columns: [][3]string{
+			{"id", "int", "YES"},
+			{"col_int", "int", "YES"},
+		},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "table_varchar_float_text", Name: "id"}:          15,
+		TableColumn{Table: "table_varchar_float_text", Name: "col_varchar"}: true,
+		TableColumn{Table: "table_varchar_float_text", Name: "col_float"}:   -0.1,
+		TableColumn{Table: "table_varchar_float_text", Name: "col_text"}:    -1,
+		TableColumn{Table: "table_int", Name: "id"}:                         9,
+		TableColumn{Table: "table_int", Name: "col_int"}:                    1,
+	})
+	require.Equal(t, true, isTrueValue(value))
+}
+
+func TestCase_s05(t *testing.T) {
+	//row:
+	//	table_int_varchar_text.id:8
+	//	table_int_varchar_text.col_int:
+	//	table_int_varchar_text.col_varchar:
+	//	table_int_varchar_text.col_text:0
+	//	table_float.id:12
+	//	table_float.col_float:
+	//	table_int.id:11
+	//	table_int.col_int:0
+	//panic: data verified failed
+	value := EvaluateRow(parse(t, `
+SELECT table_int_varchar_text.id,
+       table_int_varchar_text.col_int,
+       table_int_varchar_text.col_varchar,
+       table_int_varchar_text.col_text,
+       table_float.id,
+       table_float.col_float,
+       table_int.id,
+       table_int.col_int
+FROM (table_int_varchar_text
+      JOIN table_float)
+JOIN table_int
+WHERE ((table_int_varchar_text.id XOR 4.0631823313220344e-01) XOR (!table_int_varchar_text.col_text))
+`), []Table{{
+		Name: model.NewCIStr("table_int_varchar_text"),
+		Columns: [][3]string{
+			{"id", "int", "YES"},
+			{"col_text", "text", "YES"},
+		},
+		Indexes: nil,
+	}}, map[TableColumn]interface{}{
+		TableColumn{Table: "table_int_varchar_text", Name: "id"}:       8,
+		TableColumn{Table: "table_int_varchar_text", Name: "col_text"}: "0",
+	})
+	require.Equal(t, true, isTrueValue(value))
+}

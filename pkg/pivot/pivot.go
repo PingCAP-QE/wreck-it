@@ -181,20 +181,21 @@ func (p *Pivot) progress(ctx context.Context) {
 	// execute sql, ensure not null result set
 	resultRows, err := p.execSelect(selectStmt)
 	if err != nil {
-		panic(err)
+		log.L().Error("execSelect failed", zap.Error(err))
+		return
 	}
 	// verify pivot row in result row set
 	correct := p.verify(pivotRows, columns, resultRows)
 	if !correct {
-		fmt.Printf("query:%s\n", selectStmt)
+		fmt.Printf("query:\n%s\n", selectStmt)
 		fmt.Printf("row:\n")
 		for column, value := range pivotRows {
 			fmt.Printf("%s.%s:%v\n", column.Table, column.Name, value.ValString)
 		}
-		panic("data verifed failed")
+		panic("data verified failed")
 	}
 	fmt.Printf("run one statment [%s] successfully!\n", selectStmt)
-	// log.Info("run one statment successfully!", zap.String("query", selectStmt))
+	// log.Info("run one statement successfully!", zap.String("query", selectStmt))
 }
 
 // may move to another struct
