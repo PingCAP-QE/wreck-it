@@ -76,10 +76,10 @@ func (g *Generator) makeBinaryOp(e *ast.ParenthesesExpr, depth int, usedTables [
 	if depth > 0 {
 		r := Rd(3)
 		switch r {
-		case 0:
-			node.Op = opcode.LogicXor
-			node.L = g.whereClauseAst(depth-1, usedTables)
-			node.R = g.whereClauseAst(Rd(depth), usedTables)
+		//case 0:
+		//	node.Op = opcode.LogicXor
+		//	node.L = g.whereClauseAst(depth-1, usedTables)
+		//	node.R = g.whereClauseAst(Rd(depth), usedTables)
 		case 1:
 			node.Op = opcode.LogicOr
 			node.L = g.whereClauseAst(depth-1, usedTables)
@@ -110,9 +110,9 @@ func (g *Generator) makeBinaryOp(e *ast.ParenthesesExpr, depth int, usedTables [
 		case 5:
 			node.Op = opcode.EQ
 			f = Eq
-		case 6:
-			node.Op = opcode.LogicXor
-			f = LogicAnd
+		//case 6:
+		//	node.Op = opcode.LogicXor
+		//	f = LogicAnd
 		case 7:
 			node.Op = opcode.LogicOr
 			f = LogicOr

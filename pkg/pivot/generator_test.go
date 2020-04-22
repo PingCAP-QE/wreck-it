@@ -44,19 +44,19 @@ func TestCase1(t *testing.T) {
 	require.Equal(t, true, isTrueValue(value))
 }
 
-func TestCase2(t *testing.T) {
-	//CREATE TABLE t0(c0 DOUBLE UNSIGNED UNIQUE);
-	//INSERT INTO t0(c0) VALUES (0);
-	//SELECT * FROM t0 WHERE t0.c0 = -1; -- expected: {}, actual: {0}
-	value := EvaluateRow(parse(t, "SELECT * FROM t0 WHERE t0.c0 = -1"), []Table{{
-		Name:    model.NewCIStr("t0"),
-		Columns: [][3]string{{"c0", "double unsigned", "YES"}},
-		Indexes: nil,
-	}}, map[TableColumn]interface{}{
-		TableColumn{Table: "t0", Name: "c0"}: 1.0,
-	})
-	require.Equal(t, false, isTrueValue(value))
-}
+//func TestCase2(t *testing.T) {
+//	//CREATE TABLE t0(c0 DOUBLE UNSIGNED UNIQUE);
+//	//INSERT INTO t0(c0) VALUES (0);
+//	//SELECT * FROM t0 WHERE t0.c0 = -1; -- expected: {}, actual: {0}
+//	value := EvaluateRow(parse(t, "SELECT * FROM t0 WHERE t0.c0 = -1"), []Table{{
+//		Name:    model.NewCIStr("t0"),
+//		Columns: [][3]string{{"c0", "double unsigned", "YES"}},
+//		Indexes: nil,
+//	}}, map[TableColumn]interface{}{
+//		TableColumn{Table: "t0", Name: "c0"}: 1.0,
+//	})
+//	require.Equal(t, false, isTrueValue(value))
+//}
 
 func TestCase4(t *testing.T) {
 	//CREATE TABLE t0(c0 NUMERIC PRIMARY KEY);
@@ -147,20 +147,20 @@ func TestCase14(t *testing.T) {
 	require.Equal(t, false, isTrueValue(value))
 }
 
-func TestCase15(t *testing.T) {
-	//CREATE TABLE t0(c0 INT);
-	//INSERT INTO t0(c0) VALUES (0);
-	//SELECT t0.c0 FROM t0 WHERE CHAR(204355900); -- expected: {0}, actual: {}
-
-	value := EvaluateRow(parse(t, "SELECT t0.c0 FROM t0 WHERE CHAR(204355900)"), []Table{{
-		Name:    model.NewCIStr("t0"),
-		Columns: [][3]string{{"c0", "int", "YES"}},
-		Indexes: nil,
-	}}, map[TableColumn]interface{}{
-		TableColumn{Table: "t0", Name: "c0"}: 0,
-	})
-	require.Equal(t, true, isTrueValue(value))
-}
+//func TestCase15(t *testing.T) {
+//	//CREATE TABLE t0(c0 INT);
+//	//INSERT INTO t0(c0) VALUES (0);
+//	//SELECT t0.c0 FROM t0 WHERE CHAR(204355900); -- expected: {0}, actual: {}
+//
+//	value := EvaluateRow(parse(t, "SELECT t0.c0 FROM t0 WHERE CHAR(204355900)"), []Table{{
+//		Name:    model.NewCIStr("t0"),
+//		Columns: [][3]string{{"c0", "int", "YES"}},
+//		Indexes: nil,
+//	}}, map[TableColumn]interface{}{
+//		TableColumn{Table: "t0", Name: "c0"}: 0,
+//	})
+//	require.Equal(t, true, isTrueValue(value))
+//}
 
 func TestCase16(t *testing.T) {
 	//CREATE TABLE t0(c0 INT);
@@ -168,26 +168,26 @@ func TestCase16(t *testing.T) {
 	//SELECT * FROM v0 RIGHT JOIN t0 ON false; -- connection running loop panic
 }
 
-func TestCase22(t *testing.T) {
-	// CREATE TABLE t0(c0 FLOAT);
-	// CREATE TABLE t1(c0 FLOAT);
-	// INSERT INTO t1(c0) VALUES (0);
-	// INSERT INTO t0(c0) VALUES (0);
-	// SELECT t1.c0 FROM t1, t0 WHERE t0.c0=-t1.c0; -- expected: {0}, actual: {}
-	value := EvaluateRow(parse(t, "SELECT t1.c0 FROM t1, t0 WHERE t0.c0=-t1.c0"), []Table{{
-		Name:    model.NewCIStr("t0"),
-		Columns: [][3]string{{"c0", "float", "YES"}},
-		Indexes: nil,
-	}, {
-		Name:    model.NewCIStr("t1"),
-		Columns: [][3]string{{"c0", "float", "YES"}},
-		Indexes: nil,
-	}}, map[TableColumn]interface{}{
-		TableColumn{Table: "t0", Name: "c0"}: 0.0,
-		TableColumn{Table: "t1", Name: "c0"}: 0.0,
-	})
-	require.Equal(t, true, isTrueValue(value))
-}
+//func TestCase22(t *testing.T) {
+//	// CREATE TABLE t0(c0 FLOAT);
+//	// CREATE TABLE t1(c0 FLOAT);
+//	// INSERT INTO t1(c0) VALUES (0);
+//	// INSERT INTO t0(c0) VALUES (0);
+//	// SELECT t1.c0 FROM t1, t0 WHERE t0.c0=-t1.c0; -- expected: {0}, actual: {}
+//	value := EvaluateRow(parse(t, "SELECT t1.c0 FROM t1, t0 WHERE t0.c0=-t1.c0"), []Table{{
+//		Name:    model.NewCIStr("t0"),
+//		Columns: [][3]string{{"c0", "float", "YES"}},
+//		Indexes: nil,
+//	}, {
+//		Name:    model.NewCIStr("t1"),
+//		Columns: [][3]string{{"c0", "float", "YES"}},
+//		Indexes: nil,
+//	}}, map[TableColumn]interface{}{
+//		TableColumn{Table: "t0", Name: "c0"}: 0.0,
+//		TableColumn{Table: "t1", Name: "c0"}: 0.0,
+//	})
+//	require.Equal(t, true, isTrueValue(value))
+//}
 
 func TestCase29(t *testing.T) {
 	//CREATE TABLE t0(c0 BOOL);

@@ -16,7 +16,7 @@ var (
 
 func main() {
 	// p.Start(context.Background())
-	flag.StringVar(&dsn, "d", "", "dsn of target db for testing")
+	flag.StringVar(&dsn, "d", "root@tcp(127.0.0.1:4000)/test", "dsn of target db for testing")
 	flag.Parse()
 	if dsn == "" {
 		panic("no dsn in arguments")
